@@ -1,0 +1,12 @@
+### Cheatsheet for docker swarm mode
+- __docker swarm init__: to initialize a swarm with a manager.
+- __docker info__: to check the current status of the docker. 
+- __docker node ls__: to check all the nodes in the swarm. This command can only run from manager.
+- __docker swarm join-token worker__: to check the command used to join a swarm from worker.
+- __docker service create --replicas 1 --name helloworld alpine ping docker.com__: to start a docker service. In this command, we replicate this service with 1 service instance. The name of the service is helloworld. alpine ping docker.com define the service as an Alpine Linux container that executes the command ping docker.com.
+- __docker service ls__: see the list of running service.
+- __docker service inspect --pretty <SERVICE-ID>__: display the details about a service in an easily readable format.
+- __docker ls__: run on the node where the task is running to see details about the container for the task.
+- __docker service scale <SERVICE-ID>=<NUMBER-OF-TASKS>__: to scale up the services. Can only run from manager.
+- __docker service ps <SERVICE-ID>__: see the task list
+- __docker ps__:  see the containers running on the node where you’re connected.
