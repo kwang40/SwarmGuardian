@@ -36,15 +36,13 @@ def run():
         swarmGuardian()
         time.sleep(SLEEP_SECS)
 
-def isDead(status):
-
-
 def swarmGuardian():
     global data_centers
     # run swarm node ls to show all nodes status
     proc = subprocess.Popen(["sudo", "docker", "node", "ls"], stdout=subprocess.PIPE)
     # split to different nodes
     nodes_status = proc.stdout.read().split('\n')    
+    print nodes_status
     # update datacenter dict
     dead_managers = []
     live_managers = 0
@@ -53,6 +51,8 @@ def swarmGuardian():
     selfID = ""
     for node in nodes_status[1:]:
     	status = node.split()
+	if len(status) == 0:
+		continue
 
     	if status[1] == '*':
     		del status[1]
@@ -62,13 +62,13 @@ def swarmGuardian():
 
     	if len(status) == 5:
     		identity = 0 if status[-1] == 'Leader' else 1
-    	hostname = stauts[1]
-    	datacenter_name = stauts[1].split('-')[0]
+    	hostname = status[1]
+    	datacenter_name = status[1].split('-')[0]
     	# if dead, continue, if is mangaer
-    	if identity == 2 and stauts[2] == 'Down':
+    	if identity == 2 and status[2] == 'Down':
     		continue
-    	if identity != 2 and stauts[-1] == 'Unreachable':
-    		dead_managers.append(stauts[0])
+    	if identity != 2 and status[-1] == 'Unreachable':
+    		dead_managers.append(status[0])
     		continue
     	if datacenter_name not in data_centers:
     		data_centers[datacenter_name] = dict()
@@ -90,16 +90,16 @@ def swarmGuardian():
     	return
 
     # find best candidate, and run promotion
-    for (key, value) in data_centers:
+    for key, value in data_centers.iteritems():
     	if key in live_managers_center.keys():
     		continue
-    	for (node, identity) in value:
+    	for node, identity in value.iteritems():
     		if identity == 2:
     			proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
     			return
 
-    for (key, value) in data_centers:
-    	for (node, identity) in value:
+    for key, value in data_centers.iteritems():
+    	for node, identity in value.iteritems():
     		if identity == 2:
     			proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
     			return
