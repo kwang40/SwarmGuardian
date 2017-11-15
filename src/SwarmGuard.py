@@ -51,6 +51,9 @@ class SwarmGuardian:
     def update_node_info(self, node):
         parsedInfo = self.parseNodeInfo(node)
 
+	if parsedInfo is None:
+	    return
+
         if self.isSelf(parsedInfo):
             self.selfID = self.getNodeID(parsedInfo)
             self.self_identity = self.getIdentity(parsedInfo)
@@ -152,8 +155,12 @@ class SwarmGuardian:
     def demoteDeadManagers(self):
         for dead_manager in self.dead_managers:
 	    print 'demoting ' + dead_manager 
-            proc = subprocess.Popen(["sudo", "docker", "node", "demote", dead_manager], stdout=subprocess.PIPE)
+	    self.demoteNode(dead_manager)
 
+    ###
+
+    def demoteNode(self, node):
+        proc = subprocess.Popen(["sudo", "docker", "node", "demote", node], stdout=subprocess.PIPE)
     ###
 
     def promoteNode(self, node):
