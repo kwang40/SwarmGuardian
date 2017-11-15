@@ -66,7 +66,7 @@ class SwarmGuardian:
         if not self.isWorker(parsedInfo):
             self.live_managers += 1
             self.live_managers_center.add(self.getDataCenter(parsedInfo))
-        if self.isLeader(parsedInfo):
+        if self.isLeader(self.getIdentity(parsedInfo)):
             self.leaderID = self.getNodeID(parsedInfo)
 
     ###
@@ -126,6 +126,7 @@ class SwarmGuardian:
     ###
 
     def defaultPromotePolicy(self):
+	print 'default promote policy'
         for key, value in self.data_centers.iteritems():
             if key in self.live_managers_center.keys():
                 continue
@@ -170,12 +171,11 @@ class SwarmGuardian:
     ###
 
     def isDead(self, info):
-        return info['alive']
+        return not info['alive']
 
     ###
 
     def isSelf(self, info):
-	print info
         return True if info['self_id'] is not None else False
 
     ###
