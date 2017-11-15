@@ -23,14 +23,14 @@ class SwarmGuardian:
         self.update_datacenter_info()
 
         if self.iAmLeader():
-            return
-        else:
             self.leaderWork()
+        else:
+            return
 
     ###
 
     def reset(self):
-        self.dead_managers.clear()
+        del self.dead_managers[:]
         self.live_managers_center.clear()
         self.live_managers = 0
         self.leaderID = None
@@ -42,23 +42,23 @@ class SwarmGuardian:
     def update_datacenter_info(self):
         nodes_info = self.getNodeInfo()
 
-        for node in nodes_status:
+        for node in nodes_info:
             self.update_node_info(node)
 
     ###
 
     def update_node_info(self, node):
-        parsedInfo = parseNodeInfo(node)
+        parsedInfo = self.parseNodeInfo(node)
 
         if self.isSelf(parsedInfo):
-            self.selfID = getNodeID(parsedInfo)
-            self.self_identity = getIdentity(parsedInfo)
+            self.selfID = self.getNodeID(parsedInfo)
+            self.self_identity = self.getIdentity(parsedInfo)
 
         if self.isDeadWorker(parsedInfo):
-            continue
+            return 
         if self.isDeadManagerOrLeader(parsedInfo):
-            self.dead_managers.append(getNodeID(parsedInfo))
-            continue
+            self.dead_managers.append(self.getNodeID(parsedInfo))
+            return 
 
         if self.getDataCenter(parsedInfo) not in self.data_centers:
             self.data_centers[self.getDataCenter(parsedInfo)] = dict()
@@ -74,7 +74,7 @@ class SwarmGuardian:
     def getNodeInfo(self):
         proc = subprocess.Popen(["sudo", "docker", "node", "ls"], stdout=subprocess.PIPE)
         nodes_info = proc.stdout.read().split('\n')    
-        return nodes_info[1:]
+        return nodes_info[1:-1]
 
     ###
 
@@ -83,7 +83,6 @@ class SwarmGuardian:
             return None
 
         status = node_info.split()
-        print status
         info = dict()
         if status[1] == '*':
             del status[1]
@@ -118,6 +117,7 @@ class SwarmGuardian:
     ###
 
     def leaderWork(self):
+	print 'process leader work'
         self.demoteDeadManagers()
         if self.stable():
             return
@@ -125,7 +125,7 @@ class SwarmGuardian:
 
     ###
 
-    def defaultPromotePolicy():
+    def defaultPromotePolicy(self):
         for key, value in self.data_centers.iteritems():
             if key in self.live_managers_center.keys():
                 continue
@@ -144,6 +144,7 @@ class SwarmGuardian:
 
     def demoteDeadManagers(self):
         for dead_manager in self.dead_managers:
+	    print 'demoting ' + dead_manager 
             proc = subprocess.Popen(["sudo", "docker", "node", "demote", dead_manager], stdout=subprocess.PIPE)
 
     ###
@@ -174,17 +175,18 @@ class SwarmGuardian:
     ###
 
     def isSelf(self, info):
+	print info
         return True if info['self_id'] is not None else False
 
     ###
 
     def isDeadWorker(self, info):
-        return isDead(info) and isWorker(getIdentity(info))
+        return self.isDead(info) and self.isWorker(self.getIdentity(info))
 
     ###
 
     def isDeadManagerOrLeader(self, info):
-        return isDead(info) and (isManager(getIdentity(info)) or isLeader(getIdentity(info)))
+        return self.isDead(info) and (self.isManager(self.getIdentity(info)) or self.isLeader(self.getIdentity(info)))
 
     ###
 
