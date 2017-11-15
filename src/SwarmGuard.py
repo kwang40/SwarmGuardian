@@ -9,14 +9,12 @@ data_centers = dict()
 CONFIG_PATH = 'config.json'
 POLICY = 0 # 0 is Fault-tolerant(By default) 1 is Performance
 
-
-# parser.add_argument(
-#     '--k', type = int, default = 5,
-#     help = '',
-# )
+LEADER = 0
+MANAGER = 1
+WORKER = 2
 
 def main():
-    #init()
+    init()
     run()
     
 def init():
@@ -36,73 +34,128 @@ def run():
         swarmGuardian()
         time.sleep(SLEEP_SECS)
 
+def getNodeInfo():
+    proc = subprocess.Popen(["sudo", "docker", "node", "ls"], stdout=subprocess.PIPE)
+    nodes_info = proc.stdout.read().split('\n')    
+    return nodes_info[1:]
+
+def parseNodeInfo(node_info):
+    if len(node_info) == 0:
+        return None
+
+    status = node_info.split()
+    info = dict()
+    if status[1] == '*':
+        del status[1]
+        info['self_id'] = status[0]
+    else:
+        info['self_id'] = None
+
+    info['nodeID'] = status[0]
+    info['identity'] = WORKER
+    if len(status) == 5:
+            info['identity'] = LEADER if status[-1] == 'Leader' else MANAGER
+    info['hostname'] = status[1]
+    info['datacenter'] = status[1].split('-')[0]
+    info['alive'] = True
+    if info['identity'] == WORKER and status[2] == 'Down':
+        info['alive'] = False
+    if info['identity'] != WORKER and status[-1] == 'Unreachable':
+        info['alive'] = False
+
+    return info
+
+def isWorker(info):
+    return info['identity'] == WORKER
+
+def isManager(info):
+    return info['identity'] == MANAGER
+
+def isLeader(info):
+    return info['identity'] == LEADER
+
+def isDead(info):
+    return info['alive']
+
+def isSelf(info):
+    return True if info['self_id'] is not None else False
+
+def isDeadWorker(info):
+    return isDead(info) and isWorker(info)
+
+def isDeadManagerOrLeader(info):
+    return isDead(info) and (isManager(info) or isLeader(info))
+
+def getNodeID(info):
+    return info['nodeID']
+
+def getIdentity(info):
+    return info['identity']
+
+def getDataCenter(info):
+    return info['datacenter']
+
+def demoteDeadManagers(dead_managers):
+    for dead_manager in dead_managers:
+    	proc = subprocess.Popen(["sudo", "docker", "node", "demote", dead_manager], stdout=subprocess.PIPE)
+
 def swarmGuardian():
     global data_centers
-    # run swarm node ls to show all nodes status
-    proc = subprocess.Popen(["sudo", "docker", "node", "ls"], stdout=subprocess.PIPE)
-    # split to different nodes
-    nodes_status = proc.stdout.read().split('\n')    
     print nodes_status
+
+    # split to different nodes
+    nodes_info = getNodeInfo()
+
     # update datacenter dict
     dead_managers = []
     live_managers = 0
-    live_managers_center = dict()
+    live_managers_center = set()
     leaderID = ""
     selfID = ""
-    for node in nodes_status[1:]:
-    	status = node.split()
-	if len(status) == 0:
-		continue
+    for node in nodes_status:
+        parsedInfo = parseNodeInfo(node)
 
-    	if status[1] == '*':
-    		del status[1]
-    		selfID = status[0]
-    	# 0 for leader, 1 for manager, 2 for worker
-    	identity = 2
+        if isSelf(parsedInfo):
+            selfID = getNodeID(parsedInfo)
 
-    	if len(status) == 5:
-    		identity = 0 if status[-1] == 'Leader' else 1
-    	hostname = status[1]
-    	datacenter_name = status[1].split('-')[0]
-    	# if dead, continue, if is mangaer
-    	if identity == 2 and status[2] == 'Down':
-    		continue
-    	if identity != 2 and status[-1] == 'Unreachable':
-    		dead_managers.append(status[0])
-    		continue
+        if isDeadWorker(parsedInfo):
+            continue
+        if isDeadManagerOrLeader(parsedInfo):
+            dead_managers.append(getNodeID(parsedInfo))
+            continue
+
     	if datacenter_name not in data_centers:
-    		data_centers[datacenter_name] = dict()
-    	data_centers[datacenter_name][status[0]] = identity
-    	if identity != 2:
-    		live_managers += 1
-    		live_managers_center[datacenter_name] = 0
-    	if identity == 0:
-    		leaderID = status[0]
+            data_centers[datacenter_name] = dict()
+    	data_centers[datacenter_name][getNodeID(parsedInfo)] = getIdentity(parsedInfo)
+    	if not isWorker(parsedInfo):
+            live_managers += 1
+            live_managers_center.add(getDataCenter(parsedInfo))
+    	if isLeader(parsedInfo):
+            leaderID = getNodeID(parsedInfo)
     # if the number of managers < DESIRED_MANAGER or the leader is unreachable, return
     # if itself is not leader, return
     if leaderID != selfID :
     	return
 
-    for dead_manager in dead_managers:
-    	proc = subprocess.Popen(["sudo", "docker", "node", "demote", dead_manager], stdout=subprocess.PIPE)
+    demoteDeadManagers(dead_managers)
 
-    if live_managers == DESIRED_MANAGER:
+    if live_managers >= DESIRED_MANAGER:
     	return
 
     # find best candidate, and run promotion
     for key, value in data_centers.iteritems():
     	if key in live_managers_center.keys():
-    		continue
+            continue
     	for node, identity in value.iteritems():
-    		if identity == 2:
-    			proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
-    			return
+            if identity == 2:
+                proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
+                return
 
     for key, value in data_centers.iteritems():
     	for node, identity in value.iteritems():
-    		if identity == 2:
-    			proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
-    			return
+            if identity == 2:
+                proc = subprocess.Popen(["sudo", "docker", "node", "promote", node], stdout=subprocess.PIPE)
+                return
     
 if __name__ == '__main__':
     main()
