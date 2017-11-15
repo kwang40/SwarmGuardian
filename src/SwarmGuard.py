@@ -63,7 +63,7 @@ class SwarmGuardian:
         if self.getDataCenter(parsedInfo) not in self.data_centers:
             self.data_centers[self.getDataCenter(parsedInfo)] = dict()
         self.data_centers[self.getDataCenter(parsedInfo)][self.getNodeID(parsedInfo)] = self.getIdentity(parsedInfo)
-        if not self.isWorker(parsedInfo):
+        if not self.isWorker(self.getIdentity(parsedInfo)):
             self.live_managers += 1
             self.live_managers_center.add(self.getDataCenter(parsedInfo))
         if self.isLeader(self.getIdentity(parsedInfo)):
@@ -107,6 +107,10 @@ class SwarmGuardian:
     ###
 
     def stable(self):
+	print 'live managers: '
+	print self.live_managers
+	print 'desired managers: '
+	print self.desired_manager
         return self.live_managers >= self.desired_manager
 
     ###
@@ -120,6 +124,7 @@ class SwarmGuardian:
 	print 'process leader work'
         self.demoteDeadManagers()
         if self.stable():
+	    print 'it is stable'
             return
         self.defaultPromotePolicy()
 
@@ -128,16 +133,16 @@ class SwarmGuardian:
     def defaultPromotePolicy(self):
 	print 'default promote policy'
         for key, value in self.data_centers.iteritems():
-            if key in self.live_managers_center.keys():
+            if key in self.live_managers_center:
                 continue
             for node, identity in value.iteritems():
-                if self.isWorker(self.self_identity):
+                if self.isWorker(identity):
                     self.promoteNode(node)
                     return
 
         for key, value in self.data_centers.iteritems():
             for node, identity in value.iteritems():
-                if self.isWorker(self.self_identity):
+                if self.isWorker(identity):
                     self.promoteNode(node)
                     return
 
