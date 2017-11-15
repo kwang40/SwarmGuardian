@@ -19,6 +19,7 @@ class SwarmGuardian:
     ###
 
     def run(self):
+	print 'run'
         self.reset()
         self.update_datacenter_info()
 
