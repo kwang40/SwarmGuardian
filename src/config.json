@@ -1,1 +1,6 @@
-{"SLEEP_SECS": 5, "DESIRED_MANAGER": 3, "POLICY": 0, "EMAIL": "yifanh5@illinois.edu"}
+{
+	"SLEEP_SECS": 5,
+	"DESIRED_MANAGER": 3,
+	"POLICY": 1,
+	"EMAIL": "user@example.com"
+}
