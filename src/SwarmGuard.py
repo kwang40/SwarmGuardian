@@ -145,6 +145,8 @@ class SwarmGuardian:
     ###
 
     def iAmLeader(self):
+	if self.leaderID is None or self.selfID is None:
+		return False
         return self.leaderID == self.selfID
 
     ###
