@@ -132,7 +132,7 @@ class SwarmGuardian:
 	if curr_time < self.last_email_sent_time + 7200:
 		return
 	self.last_email_sent_time = curr_time
-	cmd = "mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < main.py"
+	cmd = "mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < warning"
         os.system(cmd)
 
     ###
