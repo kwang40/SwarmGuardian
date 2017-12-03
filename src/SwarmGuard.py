@@ -118,19 +118,25 @@ class SwarmGuardian:
     ###
 
     def can_promote(self):
+	print self.worker_cnt
+	print self.policy
         if self.worker_cnt <= 1 and self.policy == 1:
-            return False
+		print "can not promote"
+		return False
         return True
 
     ###
 
-    def send_emai(self):
-        os.system("mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < main.py")
+    def send_email(self):
+	print self.email
+	cmd = "mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < main.py"
+	print cmd
+        os.system(cmd)
 
     ###
 
     def calc_worker_cnt(self, info):
-        if info['identity'] == WORKER:
+        if info['identity'] == WORKER and info['alive']:
             self.worker_cnt += 1
 
     ###
