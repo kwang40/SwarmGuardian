@@ -1,4 +1,5 @@
 import subprocess
+import time 
 import os
 
 LEADER = 0
@@ -19,6 +20,7 @@ class SwarmGuardian:
         self.worker_cnt = 0
         self.policy = _policy
         self.email= _email
+	self.last_email_sent_time = 0
 
     ###
 
@@ -118,8 +120,6 @@ class SwarmGuardian:
     ###
 
     def can_promote(self):
-	print self.worker_cnt
-	print self.policy
         if self.worker_cnt <= 1 and self.policy == 1:
 		print "can not promote"
 		return False
@@ -128,9 +128,11 @@ class SwarmGuardian:
     ###
 
     def send_email(self):
-	print self.email
+	curr_time = int(time.time())	
+	if curr_time < self.last_email_sent_time + 7200:
+		return
+	self.last_email_sent_time = curr_time
 	cmd = "mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < main.py"
-	print cmd
         os.system(cmd)
 
     ###
