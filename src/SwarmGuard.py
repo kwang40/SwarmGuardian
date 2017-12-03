@@ -119,8 +119,8 @@ class SwarmGuardian:
 
     def can_promote(self):
         if self.worker_cnt <= 1 and self.policy == 1:
-            return false
-        return true
+            return False
+        return True
 
     ###
 
