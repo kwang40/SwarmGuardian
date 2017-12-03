@@ -6,6 +6,7 @@ SLEEP_SECS = 5
 DESIRED_MANAGER = 3
 CONFIG_PATH = 'config.json'
 POLICY = 0 # 0 is Fault-tolerant(By default) 1 is Performance
+EMAIL = "yifanh5@illinois.edu"
 
 def main():
     init()
@@ -16,15 +17,17 @@ def init():
         data = json.load(f)
 
     global SLEEP_SECS
-    SLEEP_SECS = data['SLEEP_SECS']
     global DESIRED_MANAGER
-    DESIRED_MANAGER = data['DESIRED_MANAGER']
     global POLICY
+    global EMAIL
+
+    SLEEP_SECS = data['SLEEP_SECS']
+    DESIRED_MANAGER = data['DESIRED_MANAGER']
     POLICY = data['POLICY']
-    pass
+    EMAIL = data['EMAIL']
 
 def run():
-    s = SwarmGuardian(DESIRED_MANAGER)
+    s = SwarmGuardian(DESIRED_MANAGER, POLICY, EMAIL)
     while True:
         s.run()
         time.sleep(SLEEP_SECS)

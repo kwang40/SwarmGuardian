@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 LEADER = 0
 MANAGER = 1
@@ -6,7 +7,7 @@ WORKER = 2
 
 class SwarmGuardian:
 
-    def __init__(self, _desired_manager = 3):
+    def __init__(self, _desired_manager, _policy, _email):
         self.dead_managers = list()
         self.live_managers_center = set()
         self.data_centers = dict()
@@ -15,6 +16,9 @@ class SwarmGuardian:
         self.selfID = None
         self.desired_manager = _desired_manager
         self.self_identity= None
+        self.worker_cnt = 0
+        self.policy = _policy
+        self.email= _email
 
     ###
 
@@ -34,6 +38,7 @@ class SwarmGuardian:
         del self.dead_managers[:]
         self.live_managers_center.clear()
         self.live_managers = 0
+        self.worker_cnt = 0
         self.leaderID = None
         self.selfID = None
         self.self_identity= None
@@ -106,7 +111,27 @@ class SwarmGuardian:
         if info['identity'] != WORKER and status[-1] == 'Unreachable':
             info['alive'] = False
 
+        self.calc_worker_cnt(info)
+
         return info
+
+    ###
+
+    def can_promote(self):
+        if self.worker_cnt <= 1 and self.policy == 1:
+            return false
+        return true
+
+    ###
+
+    def send_emai(self):
+        os.system("mutt -s '[SwarmGuardian]no worker node online' " + self.email + " < main.py")
+
+    ###
+
+    def calc_worker_cnt(self, info):
+        if info['identity'] == WORKER:
+            self.worker_cnt += 1
 
     ###
 
@@ -136,6 +161,10 @@ class SwarmGuardian:
 
     def defaultPromotePolicy(self):
 	print 'default promote policy'
+        if not self.can_promote():
+            self.send_email()
+            return 
+
         for key, value in self.data_centers.iteritems():
             if key in self.live_managers_center:
                 continue
