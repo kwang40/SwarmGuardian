@@ -6,7 +6,7 @@ SLEEP_SECS = 5
 DESIRED_MANAGER = 3
 CONFIG_PATH = 'config.json'
 POLICY = 0 # 0 is Fault-tolerant(By default) 1 is Performance
-EMAIL = "yifanh5@illinois.edu"
+EMAIL = "user@example.com"
 
 def main():
     init()
