@@ -8,7 +8,7 @@ WORKER = 2
 
 class SwarmGuardian:
 
-    def __init__(self, _desired_manager, _policy, _email):
+    def __init__(self, _desired_manager, _policy, _email, _cache):
         self.dead_managers = list()
         self.live_managers_center = set()
         self.data_centers = dict()
@@ -21,6 +21,8 @@ class SwarmGuardian:
         self.policy = _policy
         self.email= _email
 	self.last_email_sent_time = 0
+	self.cache_enable = _cache
+        self.cache_candidate = list()
 
     ###
 
@@ -165,7 +167,18 @@ class SwarmGuardian:
         if self.stable():
 	    print 'it is stable'
             return
+
+        if self.cache_enable and len(self.cache_candidate) is not 0:
+            self.promoteFromCache()
+            return
+
         self.defaultPromotePolicy()
+
+    ###
+
+    def promoteFromCache():
+       candidate_node = self.cache_candidate.pop(0) 
+       self.promoteNode(candidate_node)
 
     ###
 
@@ -175,13 +188,21 @@ class SwarmGuardian:
             self.send_email()
             return 
 
+        candidate_node = None
+
         for key, value in self.data_centers.iteritems():
             if key in self.live_managers_center:
                 continue
             for node, identity in value.iteritems():
                 if self.isWorker(identity):
-                    self.promoteNode(node)
-                    return
+                    if candidate_node is None:
+                        candidate_node = node
+                    else:
+                        self.cache_candidate.append(node)
+
+        if candidate_node is not None:
+            self.promoteNode(candidate_node)
+            return
 
         for key, value in self.data_centers.iteritems():
             for node, identity in value.iteritems():

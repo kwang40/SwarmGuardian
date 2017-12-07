@@ -2,5 +2,6 @@
 	"SLEEP_SECS": 5,
 	"DESIRED_MANAGER": 3,
 	"POLICY": 1,
-	"EMAIL": "user@example.com"
+	"EMAIL": "user@example.com",
+	"CACHE": 0
 }
